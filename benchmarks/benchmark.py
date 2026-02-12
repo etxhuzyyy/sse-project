@@ -8,7 +8,9 @@ from app.storage import save_file
 from app import index as index_module
 
 
-# ---------------- Synthetic Data ----------------
+# ===============================
+# Synthetic Data Generator
+# ===============================
 def random_text(words=20):
     vocab = [
         "network", "security", "privacy", "encryption",
@@ -17,9 +19,11 @@ def random_text(words=20):
     return " ".join(random.choice(vocab) for _ in range(words))
 
 
-# ---------------- Reset Environment ----------------
+# ===============================
+# Reset Environment
+# ===============================
 def reset_environment():
-    # Clear in-memory structures
+    # Clear in-memory index
     index_module.index = {}
     index_module.doc_keywords = {}
 
@@ -36,7 +40,9 @@ def reset_environment():
             os.remove(os.path.join("encrypted_files", f))
 
 
-# ---------------- Search Latency Benchmark ----------------
+# ===============================
+# Search Latency Benchmark
+# ===============================
 def average_search_time(keyword="security", trials=5):
     total = 0
     for _ in range(trials):
@@ -78,7 +84,9 @@ def benchmark_search_latency(sizes):
     return results
 
 
-# ---------------- Index Size Measurement ----------------
+# ===============================
+# Index Size Benchmark
+# ===============================
 def measure_index_size():
     if os.path.exists("data/index.json"):
         return os.path.getsize("data/index.json") / 1024  # KB
@@ -110,10 +118,24 @@ def benchmark_index_growth(sizes):
     return results
 
 
-# ---------------- Update Time Benchmark ----------------
-def benchmark_update_time(sizes):
+# ===============================
+# Update Time Benchmark
+# ===============================
+def average_update_time(trials=5):
     from app.index import update_document
 
+    total = 0
+    for _ in range(trials):
+        start = time.time()
+        update_document("file0", random_text())
+        save()
+        end = time.time()
+        total += (end - start)
+
+    return total / trials
+
+
+def benchmark_update_time(sizes):
     results = {}
 
     print("\nSSE Benchmark (Update Time)")
@@ -131,13 +153,7 @@ def benchmark_update_time(sizes):
 
         save()
 
-        # Measure update
-        start = time.time()
-        update_document("file0", random_text())
-        save()
-        end = time.time()
-
-        update_time = end - start
+        update_time = average_update_time()
         results[s] = update_time
 
         print(f"{s:>5} files | update time: {update_time:.6f}s")
@@ -145,7 +161,9 @@ def benchmark_update_time(sizes):
     return results
 
 
-# ---------------- Run All Benchmarks ----------------
+# ===============================
+# Run All Benchmarks
+# ===============================
 def run_all():
     sizes = [100, 500, 1000, 2000]
 
@@ -155,7 +173,7 @@ def run_all():
     index_results = benchmark_index_growth(sizes)
     update_results = benchmark_update_time(sizes)
 
-    # Save all results
+    # Save results
     with open("benchmarks/search_results.json", "w") as f:
         json.dump(search_results, f, indent=2)
 

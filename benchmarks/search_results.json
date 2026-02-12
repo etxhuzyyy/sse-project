@@ -1,0 +1,18 @@
+{
+  "100": {
+    "search_time_sec": 8.106231689453125e-07,
+    "index_size_kb": 7.8359375
+  },
+  "500": {
+    "search_time_sec": 7.62939453125e-07,
+    "index_size_kb": 39.708984375
+  },
+  "1000": {
+    "search_time_sec": 5.7220458984375e-07,
+    "index_size_kb": 79.779296875
+  },
+  "2000": {
+    "search_time_sec": 8.58306884765625e-07,
+    "index_size_kb": 167.44140625
+  }
+}
