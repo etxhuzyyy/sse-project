@@ -1,4 +1,6 @@
 import os
+
+from matplotlib import text
 from app.storage import delete_file, save_file, load_file
 from app.index import add_document, delete_document, save, load, search, update_document
 
@@ -10,6 +12,15 @@ load()
 # Helper Functions
 # -------------------------------
 
+def normalize_filename(name):
+    name = name.strip()
+
+    # remove .enc if user typed it
+    if name.endswith(".enc"):
+        name = name[:-4]
+
+    return name
+
 def display_results(results):
     if not results:
         print("🔍 No matching files found.")
@@ -19,8 +30,7 @@ def display_results(results):
     print("----------------------")
     for i, file in enumerate(results, 1):
         try:
-            content = load_file(file).decode(errors="ignore")
-            print(f"{i}. {file} → {content[:50]}...")
+            print(f"{i}. {file}")
         except:
             print(f"{i}. {file} (error reading file)")
     print("----------------------")
@@ -31,20 +41,95 @@ def display_results(results):
 # -------------------------------
 
 def upload_file():
+    import os
+
     path = input("Enter file path: ").strip()
+
+    # ✅ Expand ~ (home directory)
+    path = os.path.expanduser(path)
+
+    # ✅ If user enters just filename → assume Desktop
+    if not os.path.isabs(path):
+        desktop_path = os.path.join(os.path.expanduser("~/Desktop"), path)
+        if os.path.exists(desktop_path):
+            path = desktop_path
+
+    # ✅ Normalize path (handles weird slashes, spaces, etc.)
+    path = os.path.normpath(path)
+
+    print("DEBUG PATH:", path)  # optional but useful
 
     if not os.path.exists(path):
         print("❌ File does not exist.")
         return
 
     filename = os.path.basename(path)
+    filename = normalize_filename(filename)
 
     try:
+        # -------------------------------
+        # Step 1: Read file for encryption
+        # -------------------------------
         with open(path, "rb") as f:
             content = f.read()
 
+        # Save encrypted file
         save_file(filename, content)
-        add_document(filename, content.decode(errors="ignore"))
+
+        # -------------------------------
+        # Step 2: Extract TEXT for indexing
+        # -------------------------------
+        text = ""
+
+        if filename.lower().endswith(".txt"):
+            try:
+                text = content.decode("utf-8")
+            except:
+                text = content.decode(errors="ignore")
+
+        elif filename.lower().endswith(".docx"):
+            try:
+                from docx import Document
+
+                doc = Document(path)
+
+                text_parts = []
+                for para in doc.paragraphs:
+                    if para.text.strip():
+                        text_parts.append(para.text.strip())
+
+                text = " ".join(text_parts)
+
+                print("✅ DOCX text extracted successfully")
+
+            except Exception as e:
+                print("❌ DOCX extraction failed:", e)
+                print("⚠️ File will NOT be indexed (to avoid garbage data)")
+                text = ""
+
+        else:
+            print("⚠️ Unsupported file type for keyword extraction")
+            text = ""
+
+        # -------------------------------
+        # Step 3: VALIDATE TEXT (CRITICAL)
+        # -------------------------------
+        if not text.strip():
+            print("⚠️ No valid text extracted → skipping indexing")
+            print(f"✅ File still uploaded (encrypted): {filename}")
+            return
+
+        # 🔥 SAFETY CHECK (prevents your exact bug)
+        if "Content_Types" in text:
+            print("❌ ERROR: Detected binary content — skipping indexing")
+            return
+
+        print("DEBUG TEXT PREVIEW:", text[:150])
+
+        # -------------------------------
+        # Step 4: Index clean text
+        # -------------------------------
+        add_document(filename, text)
         save()
 
         print(f"✅ Uploaded and indexed: {filename}")
@@ -52,9 +137,9 @@ def upload_file():
     except Exception as e:
         print(f"⚠️ Upload failed: {e}")
 
-
 def create_file():
     filename = input("Enter new file name: ").strip()
+    filename = normalize_filename(filename)
 
     if not filename:
         print("❌ Invalid filename.")
@@ -74,6 +159,29 @@ def create_file():
 
 
 def search_files():
+    query = input("Enter keyword(s): ").strip().lower()
+
+    # 🔥 Split into multiple words
+    words = query.split()
+
+    if not words:
+        print("❌ Empty query")
+        return
+
+    try:
+        all_results = []
+
+        for word in words:
+            results = search(word)
+            all_results.append(set(results))
+
+        # 🔥 INTERSECTION (files containing ALL words)
+        final_results = set.intersection(*all_results) if all_results else set()
+
+        display_results(list(final_results))
+
+    except Exception as e:
+        print(f"⚠️ Search error: {e}")
     keyword = input("Enter keyword: ").strip()
 
     try:
@@ -87,7 +195,7 @@ def search_files():
 def update_file():
     filename = input("Enter file name to update: ").strip()
 
-    filepath = os.path.join("encrypted_files", filename)
+    filepath = os.path.join("encrypted_files", filename + ".enc")
 
     # ✅ Proper existence check
     if not os.path.exists(filepath):
@@ -129,6 +237,7 @@ def update_file():
 
 def delete_file_cli():
     filename = input("Enter file name to delete: ").strip()
+    filename = normalize_filename(filename)
 
     try:
         # Check existence
