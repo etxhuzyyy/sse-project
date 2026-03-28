@@ -1,4 +1,5 @@
 import os
+import sys
 
 from matplotlib import text
 from app.storage import delete_file, save_file, load_file
@@ -21,6 +22,28 @@ def normalize_filename(name):
 
     return name
 
+
+def pick_file_path_gui():
+    """Open a system file dialog (no typing/paste needed). Uses tkinter (bundled on Windows)."""
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+    except ImportError:
+        return ""
+    root = tk.Tk()
+    root.withdraw()
+    root.update_idletasks()
+    try:
+        root.attributes("-topmost", True)
+    except tk.TclError:
+        pass
+    try:
+        path = filedialog.askopenfilename(title="Select file to upload")
+    finally:
+        root.destroy()
+    return path
+
+
 def display_results(results):
     if not results:
         print("🔍 No matching files found.")
@@ -31,9 +54,97 @@ def display_results(results):
     for i, file in enumerate(results, 1):
         try:
             print(f"{i}. {file}")
-        except:
+        except Exception:
             print(f"{i}. {file} (error reading file)")
     print("----------------------")
+
+
+def prompt_read_decrypted_or_menu(results_list):
+    """After matches are shown: decrypt & read one file, or return to the main menu."""
+    if not results_list:
+        return
+
+    print()
+    print("  [r]  Decrypt and read a file")
+    print("  [m]  Back to main menu")
+    choice = input("What next? (r/m): ").strip().lower()
+
+    if choice in ("m", "menu", "b", "back"):
+        return
+
+    if choice not in ("r", "read", "d", "decrypt"):
+        print("❌ Unrecognized choice — returning to main menu.")
+        return
+
+    if len(results_list) == 1:
+        filename = normalize_filename(results_list[0])
+    else:
+        filename = None
+        while True:
+            raw = input(f"Which file? Enter number 1–{len(results_list)}: ").strip()
+            if not raw.isdigit():
+                print("❌ Enter a number from the list.")
+                continue
+            idx = int(raw)
+            if 1 <= idx <= len(results_list):
+                filename = normalize_filename(results_list[idx - 1])
+                break
+            print(f"❌ Pick a number between 1 and {len(results_list)}.")
+
+    try:
+        data = load_file(filename)
+    except FileNotFoundError:
+        print(f"❌ Encrypted copy not found for: {filename}")
+        return
+    except Exception as e:
+        print(f"⚠️ Could not decrypt: {e}")
+        return
+
+    print()
+    print("─" * 56)
+    print(f"Decrypted: {filename}")
+    print("─" * 56)
+    try:
+        print(data.decode("utf-8"))
+    except Exception:
+        print(data.decode("utf-8", errors="replace"))
+    print("─" * 56)
+
+
+def _term(*seqs):
+    """ANSI only when stdout is an interactive terminal."""
+    if not sys.stdout.isatty():
+        return ""
+    return "".join(seqs)
+
+
+def menu():
+    """Draw the main menu (ANSI borders only so padding stays aligned)."""
+    rs = _term("\033[0m")
+    ac = _term("\033[38;5;109m")
+    inner = 48
+    bar = "─" * inner
+
+    def row(body):
+        # Plain text only inside the box so .ljust() matches terminal columns
+        return f"  {ac}│{rs} {body.ljust(inner)} {ac}│{rs}"
+
+    print()
+    print(f"  {ac}╭{bar}╮{rs}")
+    print(row("  ▸  SECURE SSE  ·  private keyword search"))
+    print(row("     Encrypted files · local search index"))
+    print(f"  {ac}├{bar}┤{rs}")
+    for key, label in [
+        ("1", "Upload file from computer"),
+        ("2", "Create new file"),
+        ("3", "Search files"),
+        ("4", "Update file"),
+        ("5", "Delete file"),
+        ("6", "Exit"),
+    ]:
+        print(row(f"  {key}  ·  {label}"))
+    print(f"  {ac}╰{bar}╯{rs}")
+    print()
 
 
 # -------------------------------
@@ -43,7 +154,19 @@ def display_results(results):
 def upload_file():
     import os
 
-    path = input("Enter file path: ").strip()
+    print(
+        "File path — paste the full path, or press Enter (or type b) to choose a file in a dialog."
+    )
+    print("  (In Windows Terminal: Ctrl+Shift+V to paste; in older CMD: right‑click → Paste.)")
+    path = input("File path: ").strip()
+    # Windows often pastes paths wrapped in quotes; that breaks os.path.exists
+    path = path.strip('"').strip("'")
+
+    if not path or path.lower() in ("b", "browse"):
+        path = pick_file_path_gui()
+        if not path:
+            print("❌ No file selected.")
+            return
 
     # ✅ Expand ~ (home directory)
     path = os.path.expanduser(path)
@@ -60,7 +183,11 @@ def upload_file():
     print("DEBUG PATH:", path)  # optional but useful
 
     if not os.path.exists(path):
-        print("❌ File does not exist.")
+        print("❌ File does not exist at that path.")
+        print(
+            "   Tip: Use the full path (no surrounding quotes). "
+            "Bare filenames are only checked on Desktop and the app folder."
+        )
         return
 
     filename = os.path.basename(path)
@@ -178,15 +305,9 @@ def search_files():
         # 🔥 INTERSECTION (files containing ALL words)
         final_results = set.intersection(*all_results) if all_results else set()
 
-        display_results(list(final_results))
-
-    except Exception as e:
-        print(f"⚠️ Search error: {e}")
-    keyword = input("Enter keyword: ").strip()
-
-    try:
-        results = search(keyword)
-        display_results(results)
+        results_list = sorted(final_results)
+        display_results(results_list)
+        prompt_read_decrypted_or_menu(results_list)
 
     except Exception as e:
         print(f"⚠️ Search error: {e}")
@@ -200,26 +321,6 @@ def update_file():
     # ✅ Proper existence check
     if not os.path.exists(filepath):
         print("❌ No such file exists. Cannot update.")
-        return
-
-    new_content = input("Enter new content:\n")
-
-    try:
-        update_document(filename, new_content)
-        save_file(filename, new_content.encode())
-        save()
-
-        print(f"✅ File updated: {filename}")
-
-    except Exception as e:
-        print(f"⚠️ Update failed: {e}")
-    filename = input("Enter file name to update: ").strip()
-
-    try:
-        # Check if file exists
-        load_file(filename)
-    except:
-        print("❌ File does not exist. Cannot update.")
         return
 
     new_content = input("Enter new content:\n")
@@ -261,20 +362,6 @@ def delete_file_cli():
 
     except Exception as e:
         print(f"⚠️ Delete failed: {e}")
-
-
-# -------------------------------
-# Main Menu
-# -------------------------------
-
-def menu():
-    print("\n==== Secure SSE File System ====")
-    print("1. Upload file from computer")
-    print("2. Create new file")
-    print("3. Search files")
-    print("4. Update file")
-    print("5. Delete file")
-    print("6. Exit")
 
 
 # -------------------------------
