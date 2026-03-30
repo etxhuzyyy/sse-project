@@ -103,7 +103,8 @@
     "Feedback.txt"
   ],
   "65e83282340958a170aca388ba623f4da5feb557d817851ccb2631a11ab46390": [
-    "Feedback.txt"
+    "Feedback.txt",
+    "Privacy Document"
   ],
   "d42fff01cd508bfb2797ab4a112cafd8b889f424c944644065219c28acd0ad71": [
     "Feedback.txt"
@@ -190,7 +191,8 @@
     "Feedback.txt"
   ],
   "810fa1e25bf10eb21077240eb19cf114f186307cd2ea5a967f20309ffe992a83": [
-    "Feedback.txt"
+    "Feedback.txt",
+    "Privacy Document"
   ],
   "c86a0df50952a1c00faa645d00a22191110b5cb128752a316db65a4c5c9df31c": [
     "Feedback.txt"
@@ -240,5 +242,26 @@
   ],
   "636d2f4825bd5ca672c5ec188d42149fa6fea7f58301e5088e18e6077bec426b": [
     "medical_report"
+  ],
+  "0a4fe37c393660ef4507ae6c24f39039f6f5594a78d59b1d409743d72d11b767": [
+    "Privacy Document"
+  ],
+  "7081d8a341608f38ff2117f268ce56ed053c82b6a24f6af40546cfbb89e64fba": [
+    "Privacy Document"
+  ],
+  "e90ccaaa7da48b045cf376464574316de188c6ccfeeb6d32ad32aa530a51a929": [
+    "Privacy Document"
+  ],
+  "151cd64ed28a61d7502ea5b2ca68823ecc50fb6c43fe41100512c1f7d833477e": [
+    "Privacy Document"
+  ],
+  "b0d6b4d9101319d03a59b854494c47698c2cc55ad978a69cc11d1aba26784308": [
+    "Privacy Document"
+  ],
+  "b6939e79ffde64facbe2f2ed74d016adbe21f3c61ea24e6630d73bdc1a4872bb": [
+    "Privacy Document"
+  ],
+  "c0998d65c9291c18bed3e5dd1ca1cde418ff6d626dd2fff3254b38743a962566": [
+    "Privacy Document"
   ]
 }

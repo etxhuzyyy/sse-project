@@ -46,10 +46,10 @@ def pick_file_path_gui():
 
 def display_results(results):
     if not results:
-        print("🔍 No matching files found.")
+        print("No matching files found.")
         return
 
-    print("\n🔍 Search Results:")
+    print("\nSearch Results:")
     print("----------------------")
     for i, file in enumerate(results, 1):
         try:
@@ -73,7 +73,7 @@ def prompt_read_decrypted_or_menu(results_list):
         return
 
     if choice not in ("r", "read", "d", "decrypt"):
-        print("❌ Unrecognized choice — returning to main menu.")
+        print("Unrecognized choice — returning to main menu.")
         return
 
     if len(results_list) == 1:
@@ -83,21 +83,21 @@ def prompt_read_decrypted_or_menu(results_list):
         while True:
             raw = input(f"Which file? Enter number 1–{len(results_list)}: ").strip()
             if not raw.isdigit():
-                print("❌ Enter a number from the list.")
+                print("Enter a number from the list.")
                 continue
             idx = int(raw)
             if 1 <= idx <= len(results_list):
                 filename = normalize_filename(results_list[idx - 1])
                 break
-            print(f"❌ Pick a number between 1 and {len(results_list)}.")
+            print(f"Pick a number between 1 and {len(results_list)}.")
 
     try:
         data = load_file(filename)
     except FileNotFoundError:
-        print(f"❌ Encrypted copy not found for: {filename}")
+        print(f"Encrypted copy not found for: {filename}")
         return
     except Exception as e:
-        print(f"⚠️ Could not decrypt: {e}")
+        print(f"Could not decrypt: {e}")
         return
 
     print()
@@ -165,7 +165,7 @@ def upload_file():
     if not path or path.lower() in ("b", "browse"):
         path = pick_file_path_gui()
         if not path:
-            print("❌ No file selected.")
+            print("No file selected.")
             return
 
     # ✅ Expand ~ (home directory)
@@ -183,7 +183,7 @@ def upload_file():
     print("DEBUG PATH:", path)  # optional but useful
 
     if not os.path.exists(path):
-        print("❌ File does not exist at that path.")
+        print("File does not exist at that path.")
         print(
             "   Tip: Use the full path (no surrounding quotes). "
             "Bare filenames are only checked on Desktop and the app folder."
@@ -230,25 +230,25 @@ def upload_file():
                 print("✅ DOCX text extracted successfully")
 
             except Exception as e:
-                print("❌ DOCX extraction failed:", e)
-                print("⚠️ File will NOT be indexed (to avoid garbage data)")
+                print("DOCX extraction failed:", e)
+                print("File will NOT be indexed (to avoid garbage data)")
                 text = ""
 
         else:
-            print("⚠️ Unsupported file type for keyword extraction")
+            print("Unsupported file type for keyword extraction")
             text = ""
 
         # -------------------------------
         # Step 3: VALIDATE TEXT (CRITICAL)
         # -------------------------------
         if not text.strip():
-            print("⚠️ No valid text extracted → skipping indexing")
-            print(f"✅ File still uploaded (encrypted): {filename}")
+            print("No valid text extracted → skipping indexing")
+            print(f"File still uploaded (encrypted): {filename}")
             return
 
         # 🔥 SAFETY CHECK (prevents your exact bug)
         if "Content_Types" in text:
-            print("❌ ERROR: Detected binary content — skipping indexing")
+            print("ERROR: Detected binary content — skipping indexing")
             return
 
         print("DEBUG TEXT PREVIEW:", text[:150])
@@ -259,17 +259,17 @@ def upload_file():
         add_document(filename, text)
         save()
 
-        print(f"✅ Uploaded and indexed: {filename}")
+        print(f"Uploaded and indexed: {filename}")
 
     except Exception as e:
-        print(f"⚠️ Upload failed: {e}")
+        print(f"Upload failed: {e}")
 
 def create_file():
     filename = input("Enter new file name: ").strip()
     filename = normalize_filename(filename)
 
     if not filename:
-        print("❌ Invalid filename.")
+        print("Invalid filename.")
         return
 
     content = input("Enter file content:\n")
@@ -279,10 +279,10 @@ def create_file():
         add_document(filename, content)
         save()
 
-        print(f"✅ File created and indexed: {filename}")
+        print(f"File created and indexed: {filename}")
 
     except Exception as e:
-        print(f"⚠️ Error creating file: {e}")
+        print(f"Error creating file: {e}")
 
 
 def search_files():
@@ -292,7 +292,7 @@ def search_files():
     words = query.split()
 
     if not words:
-        print("❌ Empty query")
+        print("Empty query")
         return
 
     try:
@@ -310,7 +310,7 @@ def search_files():
         prompt_read_decrypted_or_menu(results_list)
 
     except Exception as e:
-        print(f"⚠️ Search error: {e}")
+        print(f"Search error: {e}")
 
 
 def update_file():
@@ -320,7 +320,7 @@ def update_file():
 
     # ✅ Proper existence check
     if not os.path.exists(filepath):
-        print("❌ No such file exists. Cannot update.")
+        print("No such file exists. Cannot update.")
         return
 
     new_content = input("Enter new content:\n")
@@ -330,10 +330,10 @@ def update_file():
         save_file(filename, new_content.encode())
         save()
 
-        print(f"✅ File updated: {filename}")
+        print(f"File updated: {filename}")
 
     except Exception as e:
-        print(f"⚠️ Update failed: {e}")
+        print(f"Update failed: {e}")
 
 
 def delete_file_cli():
@@ -344,13 +344,13 @@ def delete_file_cli():
         # Check existence
         load_file(filename)
     except:
-        print("❌ File does not exist.")
+        print("File does not exist.")
         return
 
     confirm = input(f"Are you sure you want to delete '{filename}'? (y/n): ")
 
     if confirm.lower() != "y":
-        print("❌ Deletion cancelled.")
+        print("Deletion cancelled.")
         return
 
     try:
@@ -358,10 +358,10 @@ def delete_file_cli():
         delete_file(filename)
         save()
 
-        print(f"🗑️ File deleted: {filename}")
+        print(f"File deleted: {filename}")
 
     except Exception as e:
-        print(f"⚠️ Delete failed: {e}")
+        print(f"Delete failed: {e}")
 
 
 # -------------------------------
